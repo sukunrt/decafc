@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"io"
+	"strings"
 )
 
 type Type int
@@ -10,6 +11,9 @@ type Type int
 const (
 	TypeUnknown Type = iota
 	TypeOp
+	TypeEquality
+	TypeAssignment
+	TypeIdentifier
 )
 
 type token struct {
@@ -75,22 +79,57 @@ LOOP:
 		l.column++
 	}
 
-	advanceScanner := true
+	advance := true
 	defer func() {
-		if advanceScanner {
-			l.s.Scan()
-			l.column++
+		if advance {
+			l.scanNext()
 		}
 	}()
 
 	txt := l.s.Text()
+	column := l.column
 	var tp Type
 	var value string
 	switch txt {
 	case "+":
 		value = txt
 		tp = TypeOp
+	case "=":
+		l.scanNext()
+		if l.s.Text() == "=" {
+			value = "=="
+			tp = TypeEquality
+		} else {
+			value = "="
+			advance = false
+			tp = TypeAssignment
+		}
 	default:
+		value = l.getWord()
+		if value != "" {
+			tp = TypeIdentifier
+		}
+		advance = false
 	}
-	l.next = append(l.next, token{Type: tp, Line: l.line, Column: l.column, Value: value})
+	l.next = append(l.next, token{Type: tp, Line: l.line, Column: column, Value: value})
+}
+
+func (l *lexer) getWord() string {
+	var sb strings.Builder
+	sb.WriteString(l.s.Text())
+	for l.scanNext() {
+		if strings.ContainsAny(l.s.Text(), " \n\t") {
+			break
+		}
+		sb.WriteString(l.s.Text())
+	}
+	return sb.String()
+}
+
+func (l *lexer) scanNext() bool {
+	ret := l.s.Scan()
+	if ret {
+		l.column++
+	}
+	return ret
 }

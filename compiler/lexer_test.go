@@ -31,6 +31,17 @@ func TestLexer(t *testing.T) {
 				newToken(TypeOp, 2, 6, "+"),
 			},
 		},
+		{
+			input: "+ = == hello\nworld ==",
+			output: []token{
+				newToken(TypeOp, 1, 1, "+"),
+				newToken(TypeAssignment, 1, 3, "="),
+				newToken(TypeEquality, 1, 5, "=="),
+				newToken(TypeIdentifier, 1, 8, "hello"),
+				newToken(TypeIdentifier, 2, 1, "world"),
+				newToken(TypeEquality, 2, 7, "=="),
+			},
+		},
 	}
 	for i, c := range tc {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
